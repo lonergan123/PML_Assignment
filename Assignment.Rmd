@@ -1,0 +1,59 @@
+---
+title: "Practical Machine Learning Assignment"
+author: "Kevin Lonergan"
+date: "Thursday, March 19, 2015"
+output: html_document
+---
+##Introduction
+For this assignment, we will build a prediction model to try and identify whether a dumbbell lift is being done correctly or with common classes of mistakes.  Data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different way
+
+#Get and load data:
+
+```{r echo=TRUE}
+#trainurl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+#download.file(trainurl,destfile="train.csv")
+#testurl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+#download.file(testurl,destfile="test.csv")
+trainset <- read.csv("train.csv", na.strings = c("NA","NULL",""))
+testset <- read.csv("test.csv", na.strings = c("NA","NULL",""))
+#Load required libraries
+library(caret)
+library(ggplot2)
+```
+
+#Clean the data
+The provided data set contains many data elements not relavent for the purposes of prediction.  To lower the number of elements used in the model, aggregate values, time stamps, and columns with high percentages of NA values will be removed.
+
+```{r echo=TRUE}
+exclude_cols <- c(1:7) 
+exclude_cols <- c(exclude_cols,grep("kurtosis|skewness|max|min|var|avg|stddev",colnames(trainset),value=FALSE))
+trainset1 <- trainset[,-exclude_cols]
+trainset2 <- trainset1[,(colSums(is.na(trainset1)) / nrow(trainset1) < 0.1)]
+```
+
+#Create training and test set
+Becuase the provided test set is only 20 observations and intended only for the 2nd part of the assignment (i.e., a tiny % of the data set), it is necessary to build a seperate test set for the purpose of cross validation.  
+
+```{r echo=TRUE}
+inTrain <- createDataPartition(y=trainset2$classe,p=0.7,list=FALSE)
+trainsetmod <- trainset2[inTrain,]
+testsetmod <- trainset2[-inTrain,]
+```
+
+#Build Model
+For the purposes of this assignment, speed and performance is not of primary importance.  And so a highly accurate 'random forest' method has been chosen to build the model.  
+
+```{r echo=TRUE}
+#mod <- train(classe~., method ="rf", data=trainsetmod)
+```
+
+#Estimate Out of Sample Error Rate
+We expect the out of sample error rate to be approximately 0.67% as per the final model object:
+```{r}
+mod$finalMod
+```
+
+We can estimate the out of sample error rate using a confusion matrix on the test set we created previously:
+```{r}
+confusionMatrix(predict(mod,testsetmod),testsetmod$classe)
+```
